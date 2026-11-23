@@ -3,9 +3,9 @@ from __future__ import annotations
 
 ROLES = ("owner", "manager", "staff", "customer")
 
-_STAFF = {"chat", "customer.create", "property.create"}
+_STAFF = {"chat", "customer.create", "property.create", "property.search"}
 ROLE_ACTIONS = {
-    "customer": {"chat"},
+    "customer": {"chat", "property.search"},
     "staff": set(_STAFF),
     "manager": _STAFF | {"approve"},
     "owner": _STAFF | {"approve", "users.manage"},
