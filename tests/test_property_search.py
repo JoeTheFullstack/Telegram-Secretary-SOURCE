@@ -75,7 +75,7 @@ class PropertySearchTests(unittest.TestCase):
         for i in range(3):
             self._create(f"زمین {600+i} متری کرج {2+i} میلیارد")
         out = say(self.router, CUSTOMER, "/search")
-        self.assertIn("5 ملک", texts(out))
+        self.assertIn("از 6 ملک", texts(out))
         out = say(self.router, CUSTOMER, "ps:next")
         self.assertIn("کد 1", texts(out))
         out = say(self.router, CUSTOMER, "ps:prev")
