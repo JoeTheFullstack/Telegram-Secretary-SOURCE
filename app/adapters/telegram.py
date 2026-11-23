@@ -106,5 +106,30 @@ class TelegramClient:
                 [{"text": label, "callback_data": data} for label, data in row] for row in buttons]}
         self._call("sendMessage", payload)
 
+    def send_photo(self, chat_id: int, file_id: str, caption: str = "") -> None:
+        payload = {"chat_id": chat_id, "photo": file_id}
+        if caption:
+            payload["caption"] = caption[:1024]
+        self._call("sendPhoto", payload)
+
+    def send_video(self, chat_id: int, file_id: str, caption: str = "") -> None:
+        payload = {"chat_id": chat_id, "video": file_id}
+        if caption:
+            payload["caption"] = caption[:1024]
+        self._call("sendVideo", payload)
+
+    def send_media(self, chat_id: int, media: dict) -> None:
+        kind = media.get("kind")
+        file_id = media.get("file_id")
+        if not isinstance(file_id, str) or not file_id:
+            raise TelegramError("outgoing media has no valid file_id")
+        caption = str(media.get("caption") or "")
+        if kind == "photo":
+            self.send_photo(chat_id, file_id, caption)
+        elif kind == "video":
+            self.send_video(chat_id, file_id, caption)
+        else:
+            raise TelegramError("unsupported outgoing media kind")
+
     def answer_callback(self, callback_id: str) -> None:
         self._call("answerCallbackQuery", {"callback_query_id": callback_id})
