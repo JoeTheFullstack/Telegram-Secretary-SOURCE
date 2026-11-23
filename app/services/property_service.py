@@ -4,6 +4,7 @@ from __future__ import annotations
 import sqlite3
 
 from app.core import permissions
+from app.domain import property_parsing
 from app.domain.property_schemas import PropertyDraft
 from app.infra.db import transaction
 from app.repositories import audit, properties
@@ -20,7 +21,6 @@ def create_property(conn: sqlite3.Connection, actor: User, draft: PropertyDraft)
         property_id = properties.insert(conn, draft.to_dict(), title, created_by=actor.id)
         audit.log(conn, actor.id, "property.create", "property", property_id, {"title": title})
     return property_id
-
 
 
 def add_property_media(conn: sqlite3.Connection, actor: User, property_id: int, media: dict) -> bool:
@@ -60,3 +60,31 @@ def start_media_collection(conn: sqlite3.Connection, actor: User, property_id: i
     with transaction(conn):
         audit.log(conn, actor.id, "property.media.session_start", "property", property_id, {})
     return row["title"]
+
+
+def search_properties(conn: sqlite3.Connection, actor: User, query: str = "", limit: int = 5, offset: int = 0):
+    """Search inventory; customers can only discover currently available properties."""
+    permissions.require(actor.role, "property.search")
+    query = (query or "").strip()
+    parsed = property_parsing.parse_property_text(query) if query else PropertyDraft()
+    keyword = query if query and parsed.is_empty() else None
+    return properties.search(
+        conn,
+        property_type=parsed.property_type,
+        location=parsed.location,
+        keyword=keyword,
+        min_area=parsed.area_m2,
+        max_price=parsed.price,
+        available_only=(actor.role == "customer"),
+        limit=limit,
+        offset=offset,
+    )
+
+
+def get_property_for_view(conn: sqlite3.Connection, actor: User, property_id: int):
+    """Return details and media only when this role may see the property's status."""
+    permissions.require(actor.role, "property.search")
+    row = properties.get(conn, property_id)
+    if row is None or (actor.role == "customer" and row["status"] != "available"):
+        return None
+    return row, properties.list_media(conn, property_id)
