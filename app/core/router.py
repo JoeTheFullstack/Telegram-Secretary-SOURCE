@@ -4,7 +4,7 @@ from __future__ import annotations
 import sqlite3
 from typing import Iterable, List
 
-from app.core import customer_flow, permissions, property_flow, sessions
+from app.core import customer_flow, permissions, property_flow, property_search, sessions
 from app.core.customer_flow import Reply
 from app.infra.db import transaction
 from app.repositories import audit, users
@@ -16,13 +16,18 @@ NEW_PROPERTY_PREFIXES = ("/newproperty", "ملک جدید")
 
 HELP_STAFF = (
     "منشی دیجیتال 👋\n"
+    "• جست‌وجوی ملک و دیدن عکس/فیلم: /search [عبارت]\n"
     "• ثبت مشتری: /newcustomer  یا  «مشتری جدید علی رضایی ۰۹۱۲... بودجه ۱۰ میلیارد زمین شمال»\n"
     "• ثبت ملک: /newproperty  یا  «ملک جدید زمین 500 متری شمال 10 میلیارد»\n"
     "• افزودن عکس و فیلم به ملک قبلی: /addmedia <کد ملک>\n"
     "• انصراف از کار جاری: /cancel\n"
     "• شناسهٔ تلگرام شما: /myid"
 )
-HELP_CUSTOMER = "سلام 👋 من منشی دیجیتال مشاور املاک هستم. به‌زودی می‌توانید اینجا ملک جست‌وجو کنید."
+HELP_CUSTOMER = (
+    "سلام 👋 منشی دیجیتال مشاور املاک هستم.\n"
+    "برای جست‌وجوی ملک‌های موجود دستور /search را بفرست؛ "
+    "برای محدودکردن نتایج می‌توانی نوع، منطقه، حداقل متراژ یا سقف قیمت را هم بنویسی."
+)
 DENIED = "شما اجازهٔ انجام این کار را ندارید."
 
 
@@ -83,6 +88,27 @@ class Router:
             if session is not None:
                 return [Reply("یک عملیات دیگر هنوز فعال است. ابتدا آن را با /done تمام کن یا با /cancel لغو کن.")]
             return property_flow.start_media_collection(self._conn, user, int(parts[1]))
+
+        # Search is deliberately independent of the create/upload conversation session.
+        if low == "/search" or low.startswith("/search "):
+            if not permissions.can(user.role, "property.search"):
+                return [Reply(DENIED)]
+            query = text[len("/search"):].strip()
+            return property_search.start(self._conn, user, query)
+        if low == "جستجوی ملک" or low.startswith("جستجوی ملک "):
+            if not permissions.can(user.role, "property.search"):
+                return [Reply(DENIED)]
+            query = text[len("جستجوی ملک"):].strip()
+            return property_search.start(self._conn, user, query)
+        if low == "ps:next":
+            return property_search.paginate(self._conn, user, 1)
+        if low == "ps:prev":
+            return property_search.paginate(self._conn, user, -1)
+        if low.startswith("pv:"):
+            raw_id = text[3:].strip()
+            if not raw_id.isdecimal() or int(raw_id) < 1:
+                return [Reply("شناسهٔ ملک معتبر نیست.")]
+            return property_search.view(self._conn, user, int(raw_id))
 
         if not text:
             return []
