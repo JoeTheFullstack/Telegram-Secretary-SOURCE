@@ -1,0 +1,12 @@
+{
+  "telegram_token": "PUT_BOT_TOKEN_HERE",
+  "telegram_proxy": "",
+  "owner_telegram_ids": [123456789],
+  "llm": {
+    "base_url": "http://localhost:11434/v1",
+    "api_key": "ollama",
+    "model": "qwen2.5:1.5b",
+    "timeout_seconds": 120
+  },
+  "db_path": "data/secretary.db"
+}
