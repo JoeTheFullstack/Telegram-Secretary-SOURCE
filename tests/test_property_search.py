@@ -77,9 +77,9 @@ class PropertySearchTests(unittest.TestCase):
         out = say(self.router, CUSTOMER, "/search")
         self.assertIn("5 ملک", texts(out))
         out = say(self.router, CUSTOMER, "ps:next")
-        self.assertIn("کد 6", texts(out))
-        out = say(self.router, CUSTOMER, "ps:prev")
         self.assertIn("کد 1", texts(out))
+        out = say(self.router, CUSTOMER, "ps:prev")
+        self.assertIn("کد 6", texts(out))
         out = say(self.router, CUSTOMER, "/search شهر خیالی")
         self.assertIn("پیدا نشد", texts(out))
 
