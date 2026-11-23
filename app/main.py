@@ -38,7 +38,10 @@ def process_update(update: dict, router: Router, tg: TelegramClient) -> None:
         replies = [Reply(ERROR_REPLY)]
     for r in replies:
         try:
-            tg.send_message(inc.chat_id, r.text, r.buttons)
+            if r.text:
+                tg.send_message(inc.chat_id, r.text, r.buttons)
+            if r.media:
+                tg.send_media(inc.chat_id, r.media)
         except TelegramError as e:
             log.error("send failed: %s", e)
 
