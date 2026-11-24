@@ -22,6 +22,7 @@ CONFIRM_WORDS = {"confirm", "تایید", "تأیید", "ok", "بله"}
 class Reply:
     text: str
     buttons: Optional[list] = None   # rows of (label, callback_data)
+    media: Optional[dict] = None     # optional outgoing Telegram photo/video
 
 
 _QUESTIONS = {
